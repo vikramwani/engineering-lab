@@ -1,38 +1,51 @@
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from typing import Optional
+import uuid
+import time
 
 from src.client import LLMService
-from src.logging_middleware import LoggingMiddleware
 
-app = FastAPI()
+from dotenv import load_dotenv
+load_dotenv()
 
-# Add logging middleware
-app.add_middleware(LoggingMiddleware)
+app = FastAPI(title="LLM Service")
+llm = LLMService()
 
-# Initialize your LLM service
-llm_service = LLMService()
 
-# Request model
-class ChatRequest(BaseModel):
-    query: str
+class GenerateRequest(BaseModel):
+    prompt: str = Field(..., min_length=1)
+    max_tokens: Optional[int] = 256
 
-# Health check
-@app.get("/")
-def root():
-    return {"status": "ok", "message": "LLM Service API is running"}
 
-# Versioned chat endpoint
-@app.post("/v1/chat")
-def chat_v1(req: ChatRequest):
+class GenerateResponse(BaseModel):
+    request_id: str
+    output: str
+    latency_ms: int
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.post("/generate", response_model=GenerateResponse)
+def generate(req: GenerateRequest):
+    request_id = str(uuid.uuid4())
+    start = time.time()
+
     try:
-        response = llm_service.chat(req.query)
-        return response
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "LLM processing failed",
-                "details": str(e)
-            },
+        output = llm.chat(
+            prompt=req.prompt,
+            max_tokens=req.max_tokens,
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    latency_ms = int((time.time() - start) * 1000)
+
+    return GenerateResponse(
+        request_id=request_id,
+        output=output,
+        latency_ms=latency_ms,
+    )
+

@@ -1,9 +1,6 @@
 import os
 from openai import OpenAI
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
 
 class LLMService:
     def __init__(self):
@@ -12,12 +9,15 @@ class LLMService:
             raise ValueError("Missing OPENAI_API_KEY in environment variables")
 
         self.client = OpenAI(api_key=api_key)
+        self.model = "gpt-4.1-mini"
 
-    def chat(self, query: str):
+    def chat(self, prompt: str, max_tokens: int = 256) -> str:
         response = self.client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model=self.model,
             messages=[
-                {"role": "user", "content": query}
-            ]
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=max_tokens,
         )
-        return {"response": response.choices[0].message.content}
+
+        return response.choices[0].message.content
