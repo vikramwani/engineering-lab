@@ -15,6 +15,11 @@ from .llm_errors import (
 )
 from .auth import require_api_key
 
+import logging
+
+logger = logging.getLogger("llm_service")
+
+
 
 # --------------------
 # App setup
@@ -71,13 +76,46 @@ def generate(
             max_tokens=req.max_tokens,
         )
     except LLMRateLimitError:
+        logger.warning(
+            "llm_rate_limited",
+            extra={
+                "event": "llm_rate_limited",
+                "request_id": request.state.request_id,
+            },
+        )
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
     except LLMTimeoutError:
+        logger.warning(
+            "llm_timeout",
+            extra={
+                "event": "llm_timeout",
+                "request_id": request.state.request_id,
+            },
+        )
         raise HTTPException(status_code=504, detail="LLM request timed out")
+
     except LLMUnavailableError:
+        logger.error(
+            "llm_unavailable",
+            extra={
+                "event": "llm_unavailable",
+                "request_id": request.state.request_id,
+            },
+        )
         raise HTTPException(status_code=503, detail="LLM temporarily unavailable")
+
     except ValueError as e:
+        logger.info(
+            "bad_request",
+            extra={
+                "event": "bad_request",
+                "request_id": request.state.request_id,
+                "error": str(e),
+            },
+        )
         raise HTTPException(status_code=400, detail=str(e))
+
     except Exception:
         raise HTTPException(status_code=500, detail="Internal server error")
 
