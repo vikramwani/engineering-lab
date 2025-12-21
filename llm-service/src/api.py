@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 from typing import Optional
 import uuid
 import time
+from src.logging_middleware import logging_middleware
+
 
 from src.client import LLMService
 
@@ -10,6 +12,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI(title="LLM Service")
+app.middleware("http")(logging_middleware)
+
 llm = LLMService()
 
 
@@ -38,8 +42,13 @@ def generate(req: GenerateRequest):
             prompt=req.prompt,
             max_tokens=req.max_tokens,
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
 
     latency_ms = int((time.time() - start) * 1000)
 
