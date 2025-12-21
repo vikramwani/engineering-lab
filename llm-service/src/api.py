@@ -1,13 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel, Field
 from typing import Optional
 import uuid
 import time
 
-from dotenv import load_dotenv
-load_dotenv()
 
-from .logging_middleware import logging_middleware
+from .logging_middleware import LoggingMiddleware
 from .config import load_settings
 from .client import LLMService
 from .llm_errors import (
@@ -15,6 +13,7 @@ from .llm_errors import (
     LLMRateLimitError,
     LLMUnavailableError,
 )
+from .auth import require_api_key
 
 
 # --------------------
@@ -22,7 +21,10 @@ from .llm_errors import (
 # --------------------
 
 app = FastAPI(title="LLM Service")
-app.middleware("http")(logging_middleware)
+
+app.add_middleware(LoggingMiddleware)
+
+
 
 settings = load_settings()
 llm = LLMService(settings)
@@ -51,8 +53,11 @@ def health():
 
 
 @app.post("/generate", response_model=GenerateResponse)
-def generate(req: GenerateRequest):
-    request_id = str(uuid.uuid4())
+def generate(
+    req: GenerateRequest,
+    request: Request,
+    _: None = Depends(require_api_key),
+):
     start = time.time()
 
     try:
@@ -76,7 +81,7 @@ def generate(req: GenerateRequest):
     latency_ms = int((time.time() - start) * 1000)
 
     return GenerateResponse(
-        request_id=request_id,
+        request_id=request.state.request_id,
         output=output,
         latency_ms=latency_ms,
     )
