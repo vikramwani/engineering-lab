@@ -3,6 +3,12 @@ from typing import Optional
 import time
 
 from .config import Settings
+from .llm_errors import (
+    LLMTimeoutError,
+    LLMRateLimitError,
+    LLMUnavailableError,
+)
+
 
 
 class LLMService:
@@ -34,4 +40,4 @@ class LLMService:
                     break
 
         # After retries exhausted
-        raise RuntimeError("LLM request failed after retries") from last_exception
+        raise LLMUnavailableError("LLM unavailable after retries") from last_exception
