@@ -20,6 +20,11 @@ from .auth import require_api_key
 # App setup
 # --------------------
 
+
+from .logging_config import setup_logging
+
+setup_logging()
+
 app = FastAPI(title="LLM Service")
 
 app.add_middleware(LoggingMiddleware)
