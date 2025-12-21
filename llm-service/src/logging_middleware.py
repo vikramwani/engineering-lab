@@ -21,12 +21,14 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             logger.exception(
                 "request_failed",
                 extra={
+                    "event": "request_failed",
                     "request_id": request_id,
                     "method": request.method,
                     "path": request.url.path,
                     "latency_ms": latency_ms,
                 },
             )
+
             raise
 
         latency_ms = int((time.time() - start) * 1000)
@@ -34,6 +36,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         logger.info(
             "request_completed",
             extra={
+                "event": "request_completed",
                 "request_id": request_id,
                 "method": request.method,
                 "path": request.url.path,
@@ -41,6 +44,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 "latency_ms": latency_ms,
             },
         )
+
 
         response.headers["X-Request-ID"] = request_id
         return response
