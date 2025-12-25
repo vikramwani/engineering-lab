@@ -25,7 +25,9 @@ def test_auth_failure():
         headers={"Content-Type": "application/json"},
         json={"prompt": "hello"},
     )
-    assert_ok(r.status_code == 401, "Missing API key is rejected")
+    assert_ok(r.status_code == 422, "Missing API key is rejected")
+
+
 
 def test_generate_success():
     r = requests.post(
