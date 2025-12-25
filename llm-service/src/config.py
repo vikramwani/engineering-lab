@@ -1,21 +1,31 @@
 import os
 from dataclasses import dataclass
+
 from dotenv import load_dotenv
 
-load_dotenv()  # 👈 LOAD ENV ONCE, AT CONFIG LEVEL
+load_dotenv()  # Load environment variables once at config level
 
 
 @dataclass
 class Settings:
+    """Configuration settings for the LLM service."""
+    
     openai_api_key: str
     service_api_key: str
-
-    model: str = "gpt-4.1-mini"
+    model: str = "gpt-4o-mini"  # Fixed model name
     default_max_tokens: int = 256
     request_timeout_seconds: int = 15
 
 
 def load_settings() -> Settings:
+    """Load and validate configuration settings from environment variables.
+    
+    Returns:
+        Settings: Validated configuration object
+        
+    Raises:
+        RuntimeError: If required environment variables are missing
+    """
     openai_api_key = os.getenv("OPENAI_API_KEY")
     service_api_key = os.getenv("SERVICE_API_KEY")
 
@@ -27,7 +37,7 @@ def load_settings() -> Settings:
     return Settings(
         openai_api_key=openai_api_key,
         service_api_key=service_api_key,
-        model=os.getenv("MODEL", "gpt-4.1-mini"),
-        default_max_tokens=int(os.getenv("DEFAULT_MAX_TOKENS", 256)),
-        request_timeout_seconds=int(os.getenv("REQUEST_TIMEOUT_SECONDS", 15)),
+        model=os.getenv("MODEL", "gpt-4o-mini"),
+        default_max_tokens=int(os.getenv("DEFAULT_MAX_TOKENS", "256")),
+        request_timeout_seconds=int(os.getenv("REQUEST_TIMEOUT_SECONDS", "15")),
     )

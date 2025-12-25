@@ -3,6 +3,11 @@ from pythonjsonlogger import jsonlogger
 
 
 def setup_logging():
+    """Configure structured JSON logging for the application.
+    
+    Sets up a StreamHandler with JSON formatting and INFO level logging.
+    Clears existing handlers to prevent duplicates on reload.
+    """
     handler = logging.StreamHandler()
 
     formatter = jsonlogger.JsonFormatter(
@@ -10,9 +15,9 @@ def setup_logging():
     )
     handler.setFormatter(formatter)
 
-    root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
 
     # Avoid duplicate handlers on reload
-    root.handlers.clear()
-    root.addHandler(handler)
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
