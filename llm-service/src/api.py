@@ -7,10 +7,12 @@ from pydantic import BaseModel, Field
 
 from .auth import require_api_key
 from .client import LLMService
-from .config import load_settings
+from .dependencies import get_llm_service
 from .llm_errors import LLMRateLimitError, LLMTimeoutError, LLMUnavailableError
 from .logging_config import setup_logging
 from .logging_middleware import LoggingMiddleware
+from .compatibility.router import router as compatibility_router
+
 
 logger = logging.getLogger("llm_service")
 
@@ -20,11 +22,14 @@ logger = logging.getLogger("llm_service")
 
 setup_logging()
 
-app = FastAPI(title="LLM Service")
+app = FastAPI(
+    title="LLM Service",
+    debug=True
+    )
 app.add_middleware(LoggingMiddleware)
 
-settings = load_settings()
-llm_service = LLMService(settings)
+# Routers
+app.include_router(compatibility_router)
 
 
 # --------------------
@@ -62,8 +67,9 @@ def health():
 def generate(
     request_data: GenerateRequest,
     request: Request,
+    llm_service: LLMService = Depends(get_llm_service),
     _: None = Depends(require_api_key),
-):
+) -> GenerateResponse:
     """Generate text using the LLM service."""
     start_time = time.time()
 
@@ -113,7 +119,16 @@ def generate(
         )
         raise HTTPException(status_code=400, detail=str(e))
 
-    except Exception:
+    except Exception as e:
+        logger.error(
+            "generate_request_failed",
+            extra={
+                "event": "generate_request_failed",
+                "request_id": request.state.request_id,
+                "error_type": type(e).__name__,
+            },
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
     latency_ms = int((time.time() - start_time) * 1000)

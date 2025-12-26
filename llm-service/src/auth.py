@@ -1,18 +1,13 @@
+from typing import Optional
 from fastapi import Header, HTTPException
+from .dependencies import get_settings
 
-from .config import load_settings
 
-
-def require_api_key(x_api_key: str = Header(...)):
-    """Validate API key from request header.
-    
-    Args:
-        x_api_key: API key from X-API-Key header
-        
-    Raises:
-        HTTPException: If API key is invalid (401 Unauthorized)
+def require_api_key(x_api_key: Optional[str] = Header(default=None)):
     """
-    settings = load_settings()  # Load at request time
+    Validate API key from request header.
+    """
+    settings = get_settings()  # Use cached settings
 
-    if x_api_key != settings.service_api_key:
+    if not x_api_key or x_api_key != settings.service_api_key:
         raise HTTPException(status_code=401, detail="Invalid API key")

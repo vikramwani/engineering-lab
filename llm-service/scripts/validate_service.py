@@ -20,12 +20,21 @@ def test_health():
     assert_ok(r.status_code == 200, "Health endpoint returns 200")
 
 def test_auth_failure():
+    # Test missing API key
     r = requests.post(
         f"{BASE_URL}/generate",
         headers={"Content-Type": "application/json"},
         json={"prompt": "hello"},
     )
-    assert_ok(r.status_code == 422, "Missing API key is rejected")
+    assert_ok(r.status_code == 401, "Missing API key is rejected")
+
+    # Test invalid API key
+    r = requests.post(
+        f"{BASE_URL}/generate",
+        headers={"Content-Type": "application/json", "X-API-Key": "invalid-key"},
+        json={"prompt": "hello"},
+    )
+    assert_ok(r.status_code == 401, "Invalid API key is rejected")
 
 
 
@@ -41,6 +50,7 @@ def test_generate_success():
     assert_ok("request_id" in body, "Response contains request_id")
     assert_ok("latency_ms" in body, "Response contains latency")
 
+
 def test_validation_error():
     r = requests.post(
         f"{BASE_URL}/generate",
@@ -49,8 +59,9 @@ def test_validation_error():
     )
     assert_ok(r.status_code == 422, "Invalid payload returns 422")
 
+
 if __name__ == "__main__":
-    print("Running service validation...\n")
+    print("Running service validation...")
 
     test_health()
     test_auth_failure()
