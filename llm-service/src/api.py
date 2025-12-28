@@ -7,29 +7,44 @@ from pydantic import BaseModel, Field
 
 from .auth import require_api_key
 from .client import LLMService
-from .dependencies import get_llm_service
+from .dependencies import get_llm_service, get_settings
 from .llm_errors import LLMRateLimitError, LLMTimeoutError, LLMUnavailableError
 from .logging_config import setup_logging
 from .logging_middleware import LoggingMiddleware
 from .compatibility.router import router as compatibility_router
 
 
-logger = logging.getLogger("llm_service")
+logger = logging.getLogger(__name__)
 
 # --------------------
 # App setup
 # --------------------
 
-setup_logging()
+# Load settings first to get logging configuration
+settings = get_settings()
+setup_logging(
+    log_level=settings.log_level,
+    log_file=settings.log_file,
+    log_to_console=settings.log_to_console
+)
 
-app = FastAPI(
-    title="LLM Service",
-    debug=True
-    )
+app = FastAPI(title="LLM Service", debug=False)  # Set debug=False for production
 app.add_middleware(LoggingMiddleware)
 
 # Routers
 app.include_router(compatibility_router)
+
+logger.info(
+    "application_initialized",
+    extra={
+        "title": "LLM Service",
+        "log_level": settings.log_level,
+        "log_file": settings.log_file,
+        "provider": settings.llm_provider,
+    }
+)
+
+logger.info("application_initialized", extra={"title": "LLM Service"})
 
 
 # --------------------
@@ -60,6 +75,7 @@ class GenerateResponse(BaseModel):
 @app.get("/health")
 def health():
     """Health check endpoint."""
+    logger.debug("health_check_requested")
     return {"status": "ok"}
 
 
@@ -72,69 +88,105 @@ def generate(
 ) -> GenerateResponse:
     """Generate text using the LLM service."""
     start_time = time.time()
+    
+    logger.info(
+        "generate_request_started",
+        extra={
+            "request_id": request.state.request_id,
+            "prompt_length": len(request_data.prompt),
+            "max_tokens": request_data.max_tokens,
+            "provider": llm_service.settings.llm_provider,
+            "model": llm_service.settings.model,
+        }
+    )
+
+    # Log the prompt at debug level for troubleshooting
+    logger.debug(
+        "generate_request_prompt",
+        extra={
+            "request_id": request.state.request_id,
+            "prompt": request_data.prompt,
+        }
+    )
 
     try:
         output = llm_service.chat(
             prompt=request_data.prompt,
             max_tokens=request_data.max_tokens,
         )
+        
+        latency_ms = int((time.time() - start_time) * 1000)
+        
+        logger.info(
+            "generate_request_completed",
+            extra={
+                "request_id": request.state.request_id,
+                "latency_ms": latency_ms,
+                "output_length": len(output) if output else 0,
+                "provider": llm_service.settings.llm_provider,
+            }
+        )
+        
+        return GenerateResponse(
+            request_id=request.state.request_id,
+            output=output,
+            latency_ms=latency_ms,
+        )
     except LLMRateLimitError:
         logger.warning(
-            "llm_rate_limited",
+            "generate_request_rate_limited",
             extra={
-                "event": "llm_rate_limited",
                 "request_id": request.state.request_id,
+                "provider": llm_service.settings.llm_provider,
+                "latency_ms": int((time.time() - start_time) * 1000),
             },
         )
         raise HTTPException(status_code=429, detail="Rate limit exceeded")
 
     except LLMTimeoutError:
         logger.warning(
-            "llm_timeout",
+            "generate_request_timeout",
             extra={
-                "event": "llm_timeout",
                 "request_id": request.state.request_id,
+                "provider": llm_service.settings.llm_provider,
+                "timeout_seconds": llm_service.settings.request_timeout_seconds,
+                "latency_ms": int((time.time() - start_time) * 1000),
             },
         )
         raise HTTPException(status_code=504, detail="LLM request timed out")
 
     except LLMUnavailableError:
         logger.error(
-            "llm_unavailable",
+            "generate_request_llm_unavailable",
             extra={
-                "event": "llm_unavailable",
                 "request_id": request.state.request_id,
+                "provider": llm_service.settings.llm_provider,
+                "latency_ms": int((time.time() - start_time) * 1000),
             },
         )
         raise HTTPException(status_code=503, detail="LLM temporarily unavailable")
 
     except ValueError as e:
         logger.info(
-            "bad_request",
+            "generate_request_validation_error",
             extra={
-                "event": "bad_request",
                 "request_id": request.state.request_id,
-                "error": str(e),
+                "error": str(e)[:200],  # Truncate long error messages
+                "latency_ms": int((time.time() - start_time) * 1000),
             },
         )
         raise HTTPException(status_code=400, detail=str(e))
 
     except Exception as e:
         logger.error(
-            "generate_request_failed",
+            "generate_request_unexpected_error",
             extra={
-                "event": "generate_request_failed",
                 "request_id": request.state.request_id,
                 "error_type": type(e).__name__,
+                "error": str(e)[:200],
+                "provider": llm_service.settings.llm_provider,
+                "latency_ms": int((time.time() - start_time) * 1000),
             },
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
-
-    latency_ms = int((time.time() - start_time) * 1000)
-
-    return GenerateResponse(
-        request_id=request.state.request_id,
-        output=output,
-        latency_ms=latency_ms,
-    )
