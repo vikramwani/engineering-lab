@@ -1,3 +1,9 @@
+"""API key authentication middleware for the LLM service.
+
+This module provides authentication functions that validate API keys from
+request headers, ensuring secure access to protected endpoints with proper
+error handling and logging.
+"""
 import logging
 from typing import Optional
 

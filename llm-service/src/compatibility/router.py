@@ -1,3 +1,9 @@
+"""FastAPI router for product compatibility evaluation endpoints.
+
+This module provides the compatibility evaluation API endpoints with proper
+authentication, request/response validation, error handling, and structured
+logging for all compatibility operations.
+"""
 import logging
 import time
 

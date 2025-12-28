@@ -1,3 +1,9 @@
+"""Configuration management for the LLM service.
+
+This module handles loading and validation of configuration settings from
+environment variables, supporting multiple LLM providers and comprehensive
+logging configuration.
+"""
 import logging
 import os
 from dataclasses import dataclass

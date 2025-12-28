@@ -1,3 +1,9 @@
+"""Core compatibility evaluation service using LLM reasoning.
+
+This module provides the CompatibilityService class that evaluates product
+compatibility relationships using structured LLM prompts, with robust JSON
+parsing, confidence normalization, and comprehensive error handling.
+"""
 import json
 import logging
 from typing import Any, Dict
@@ -10,7 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 class CompatibilityService:
+    """Service for evaluating product compatibility using LLM reasoning.
+    
+    This service takes two products and uses an LLM to determine their compatibility
+    relationship, providing structured analysis with confidence scores and evidence.
+    """
+    
     def __init__(self, llm: LLMService):
+        """Initialize the compatibility service with an LLM client.
+        
+        Args:
+            llm: LLM service instance for making compatibility evaluations
+        """
         self.llm = llm
         logger.debug("compatibility_service_initialized", extra={"provider": llm.settings.llm_provider})
 

@@ -1,3 +1,13 @@
+"""FastAPI application for LLM-powered compatibility service.
+
+This module provides the main FastAPI application with endpoints for:
+- Health checking
+- Text generation using LLMs
+- Product compatibility evaluation
+
+The service supports multiple LLM providers (OpenAI, XAI, local) and includes
+comprehensive logging, authentication, and error handling.
+"""
 import logging
 import time
 from typing import Optional
@@ -43,8 +53,6 @@ logger.info(
         "provider": settings.llm_provider,
     }
 )
-
-logger.info("application_initialized", extra={"title": "LLM Service"})
 
 
 # --------------------

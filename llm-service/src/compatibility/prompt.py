@@ -1,3 +1,10 @@
+"""System prompt template for LLM-based product compatibility evaluation.
+
+This module contains the carefully crafted system prompt that instructs the LLM
+to evaluate product compatibility relationships and return structured JSON responses
+with specific relationship types, confidence scores, and supporting evidence.
+"""
+
 SYSTEM_PROMPT = """
 You are a strict JSON API.
 

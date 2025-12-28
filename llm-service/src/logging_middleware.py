@@ -1,3 +1,9 @@
+"""HTTP request/response logging middleware with structured data.
+
+This module provides FastAPI middleware that logs all HTTP requests and responses
+with structured JSON data including request IDs, timing information, and error
+context for comprehensive observability.
+"""
 import logging
 import time
 import uuid

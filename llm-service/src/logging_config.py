@@ -1,3 +1,9 @@
+"""Structured JSON logging configuration for the LLM service.
+
+This module sets up comprehensive logging with JSON formatting, file rotation,
+and configurable log levels to support production monitoring and debugging
+requirements.
+"""
 import logging
 import logging.handlers
 import os

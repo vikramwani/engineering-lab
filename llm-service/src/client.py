@@ -1,3 +1,9 @@
+"""LLM client service with multi-provider support and retry logic.
+
+This module provides the LLMService class that handles communication with
+various LLM providers (OpenAI, XAI, local) with built-in retry logic,
+timeout handling, and comprehensive logging.
+"""
 import logging
 import time
 from typing import Optional

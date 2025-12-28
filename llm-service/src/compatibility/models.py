@@ -1,3 +1,9 @@
+"""Pydantic models for product compatibility evaluation.
+
+This module defines the data models used for compatibility evaluation requests
+and responses, including product definitions, relationship types, and validation
+constraints for the compatibility service API.
+"""
 from typing import Dict, List, Literal
 from pydantic import BaseModel, Field
 
