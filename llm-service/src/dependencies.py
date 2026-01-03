@@ -4,6 +4,7 @@ This module provides cached instances of configuration settings and LLM service
 objects to ensure efficient resource usage and consistent configuration across
 the application lifecycle.
 """
+
 import logging
 
 from .client import LLMService
@@ -37,7 +38,7 @@ def get_llm_service() -> LLMService:
         _llm_service = LLMService(settings)
         logger.info(
             "llm_service_initialized",
-            extra={"provider": settings.llm_provider, "model": settings.model}
+            extra={"provider": settings.llm_provider, "model": settings.model},
         )
     else:
         logger.debug("llm_service_cache_hit")

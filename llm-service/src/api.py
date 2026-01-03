@@ -8,6 +8,7 @@ This module provides the main FastAPI application with endpoints for:
 The service supports multiple LLM providers (OpenAI, XAI, local) and includes
 comprehensive logging, authentication, and error handling.
 """
+
 import logging
 import time
 from typing import Optional
@@ -35,10 +36,11 @@ settings = get_settings()
 setup_logging(
     log_level=settings.log_level,
     log_file=settings.log_file,
-    log_to_console=settings.log_to_console
+    log_to_console=settings.log_to_console,
 )
 
-app = FastAPI(title="LLM Service", debug=False)  # Set debug=False for production
+# Set debug=False for production
+app = FastAPI(title="LLM Service", debug=False)
 app.add_middleware(LoggingMiddleware)
 
 # Routers
@@ -51,7 +53,7 @@ logger.info(
         "log_level": settings.log_level,
         "log_file": settings.log_file,
         "provider": settings.llm_provider,
-    }
+    },
 )
 
 
@@ -62,14 +64,14 @@ logger.info(
 
 class GenerateRequest(BaseModel):
     """Request model for text generation."""
-    
+
     prompt: str = Field(..., min_length=1)
     max_tokens: Optional[int] = None
 
 
 class GenerateResponse(BaseModel):
     """Response model for text generation."""
-    
+
     request_id: str
     output: str
     latency_ms: int
@@ -96,7 +98,7 @@ def generate(
 ) -> GenerateResponse:
     """Generate text using the LLM service."""
     start_time = time.time()
-    
+
     logger.info(
         "generate_request_started",
         extra={
@@ -105,7 +107,7 @@ def generate(
             "max_tokens": request_data.max_tokens,
             "provider": llm_service.settings.llm_provider,
             "model": llm_service.settings.model,
-        }
+        },
     )
 
     # Log the prompt at debug level for troubleshooting
@@ -114,7 +116,7 @@ def generate(
         extra={
             "request_id": request.state.request_id,
             "prompt": request_data.prompt,
-        }
+        },
     )
 
     try:
@@ -122,9 +124,9 @@ def generate(
             prompt=request_data.prompt,
             max_tokens=request_data.max_tokens,
         )
-        
+
         latency_ms = int((time.time() - start_time) * 1000)
-        
+
         logger.info(
             "generate_request_completed",
             extra={
@@ -132,9 +134,9 @@ def generate(
                 "latency_ms": latency_ms,
                 "output_length": len(output) if output else 0,
                 "provider": llm_service.settings.llm_provider,
-            }
+            },
         )
-        
+
         return GenerateResponse(
             request_id=request.state.request_id,
             output=output,
@@ -157,7 +159,9 @@ def generate(
             extra={
                 "request_id": request.state.request_id,
                 "provider": llm_service.settings.llm_provider,
-                "timeout_seconds": llm_service.settings.request_timeout_seconds,
+                "timeout_seconds": (
+                    llm_service.settings.request_timeout_seconds
+                ),
                 "latency_ms": int((time.time() - start_time) * 1000),
             },
         )
@@ -172,7 +176,9 @@ def generate(
                 "latency_ms": int((time.time() - start_time) * 1000),
             },
         )
-        raise HTTPException(status_code=503, detail="LLM temporarily unavailable")
+        raise HTTPException(
+            status_code=503, detail="LLM temporarily unavailable"
+        )
 
     except ValueError as e:
         logger.info(

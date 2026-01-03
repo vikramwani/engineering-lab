@@ -4,6 +4,7 @@ This module provides the compatibility evaluation API endpoints with proper
 authentication, request/response validation, error handling, and structured
 logging for all compatibility operations.
 """
+
 import logging
 import time
 
@@ -43,7 +44,7 @@ def evaluate_compatibility(
 ):
     """Evaluate compatibility between two products."""
     start_time = time.time()
-    
+
     logger.info(
         "compatibility_request_started",
         extra={
@@ -52,14 +53,14 @@ def evaluate_compatibility(
             "product_b_id": request.product_b.id,
             "product_b_category": request.product_b.category,
             "provider": service.llm.settings.llm_provider,
-        }
+        },
     )
-    
+
     try:
         result = service.evaluate(request)
-        
+
         latency_ms = int((time.time() - start_time) * 1000)
-        
+
         logger.info(
             "compatibility_request_completed",
             extra={
@@ -70,11 +71,11 @@ def evaluate_compatibility(
                 "confidence": result.confidence,
                 "latency_ms": latency_ms,
                 "provider": service.llm.settings.llm_provider,
-            }
+            },
         )
-        
+
         return result
-        
+
     except ValueError as e:
         latency_ms = int((time.time() - start_time) * 1000)
         logger.warning(
@@ -85,10 +86,10 @@ def evaluate_compatibility(
                 "error": str(e)[:200],
                 "latency_ms": latency_ms,
                 "provider": service.llm.settings.llm_provider,
-            }
+            },
         )
         raise HTTPException(status_code=422, detail=str(e))
-        
+
     except Exception as e:
         latency_ms = int((time.time() - start_time) * 1000)
         logger.error(
@@ -104,4 +105,3 @@ def evaluate_compatibility(
             exc_info=True,
         )
         raise HTTPException(status_code=500, detail="Internal server error")
-

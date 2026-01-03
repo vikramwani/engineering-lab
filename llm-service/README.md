@@ -1,44 +1,78 @@
 # LLM Compatibility Service
 
-A production-ready FastAPI microservice that leverages Large Language Models to evaluate product compatibility relationships. The service provides intelligent compatibility analysis between products with structured JSON responses, confidence scoring, and comprehensive relationship classification.
+A production-ready FastAPI microservice that leverages Large Language Models to evaluate product compatibility relationships using a sophisticated multi-agent debate architecture. The service provides intelligent compatibility analysis between products with structured JSON responses, confidence scoring, and comprehensive relationship classification.
 
 ## 🚀 Overview
 
-This service analyzes two products and determines their compatibility relationship using OpenAI's GPT models. It's designed for e-commerce platforms, inventory management systems, and product recommendation engines that need to understand how products relate to each other.
+This service analyzes two products and determines their compatibility relationship using a **multi-agent debate system** powered by OpenAI's GPT models. It's designed for e-commerce platforms, inventory management systems, and product recommendation engines that need to understand how products relate to each other.
+
+### Multi-Agent Debate Architecture
+
+The service employs a sophisticated three-agent debate system:
+
+1. **Advocate Agent**: Argues FOR compatibility, finding evidence that products work together
+2. **Skeptic Agent**: Argues AGAINST compatibility, identifying potential issues and incompatibilities  
+3. **Judge Agent**: Resolves the debate by weighing both perspectives and making a final decision
+
+This architecture provides:
+- **More robust evaluations** through multiple perspectives
+- **Calibrated confidence** based on agent agreement/disagreement
+- **Better explainability** with clear reasoning from each perspective
+- **Reduced bias** by considering both positive and negative evidence
 
 ### Key Capabilities
 
-- **Intelligent Analysis**: Uses LLM reasoning to understand complex product relationships
+- **Intelligent Multi-Agent Analysis**: Debate-style evaluation with advocate, skeptic, and judge agents
 - **Structured Output**: Returns standardized JSON with compatibility status, relationship type, confidence scores, and evidence
 - **Production Ready**: Includes authentication, logging, error handling, and monitoring
 - **Robust Validation**: Handles edge cases, normalizes confidence values, and validates all inputs
 - **Comprehensive Testing**: Includes validation scripts and health checks
+- **Clean Architecture**: Separation of configuration, prompts, and business logic
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   FastAPI App   │────│  Compatibility   │────│   LLM Client    │
-│   (API Layer)   │    │     Service      │    │  (OpenAI API)   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │                        │
-         │                        │                        │
-    ┌─────────┐              ┌──────────┐           ┌──────────────┐
-    │  Auth   │              │  Models  │           │    Config    │
-    │ Module  │              │ & Prompt │           │  & Settings  │
-    └─────────┘              └──────────┘           └──────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    FastAPI Application                          │
+│                   (API Layer & Routing)                         │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                CompatibilityService                             │
+│              (Multi-Agent Orchestrator)                         │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+        ┌─────────────┼─────────────┬─────────────────────────────┐
+        ▼             ▼             ▼                             ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐         ┌─────────────┐
+│ Advocate    │ │ Skeptic     │ │ Judge       │         │ Config &    │
+│ Agent       │ │ Agent       │ │ Agent       │         │ Prompts     │
+│             │ │             │ │             │         │             │
+│ Argues FOR  │ │ Argues      │ │ Resolves    │         │ Versioned   │
+│ Compatibility│ │ AGAINST     │ │ Debate      │         │ Disk-based  │
+└─────────────┘ └─────────────┘ └─────────────┘         └─────────────┘
+        │             │             │                             │
+        └─────────────┼─────────────┘                             │
+                      ▼                                           │
+                ┌─────────────────────────┐                       │
+                │    Final Decision       │◄──────────────────────┘
+                │  (CompatibilityResponse)│
+                └─────────────────────────┘
 ```
 
 ### Components
 
 - **API Layer**: FastAPI application with routing, middleware, and error handling
-- **Compatibility Service**: Core business logic for product analysis
-- **LLM Client**: OpenAI integration with retry logic and timeout handling
+- **Multi-Agent Service**: Orchestrates debate between advocate, skeptic, and judge agents
+- **Agent System**: Specialized agents with individual prompts and reasoning capabilities
+- **Configuration Management**: Environment-based settings with immutable defaults
+- **Prompt Management**: Versioned, disk-based prompts separated from business logic
+- **LLM Client**: Multi-provider support (OpenAI/XAI/Local) with retry logic and timeout handling
 - **Authentication**: API key-based security
-- **Configuration**: Environment-based settings management
-- **Logging**: Structured JSON logging with request tracing
+- **Logging**: Structured JSON logging with request tracing and agent-level observability
 
 ---
 
