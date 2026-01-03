@@ -18,6 +18,9 @@ ENV/
 *.env
 .env.example    
 
+# ---- UI Configuration ----
+ui-config.json
+
 
 # ---- macOS ----
 .DS_Store

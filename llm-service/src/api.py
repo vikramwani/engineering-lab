@@ -4,6 +4,7 @@ This module provides the main FastAPI application with endpoints for:
 - Health checking
 - Text generation using LLMs
 - Product compatibility evaluation
+- Web UI for testing and debugging
 
 The service supports multiple LLM providers (OpenAI, XAI, local) and includes
 comprehensive logging, authentication, and error handling.
@@ -14,6 +15,8 @@ import time
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from .auth import require_api_key
@@ -42,6 +45,9 @@ setup_logging(
 # Set debug=False for production
 app = FastAPI(title="LLM Service", debug=False)
 app.add_middleware(LoggingMiddleware)
+
+# Templates for UI
+templates = Jinja2Templates(directory="templates")
 
 # Routers
 app.include_router(compatibility_router)
@@ -87,6 +93,18 @@ def health():
     """Health check endpoint."""
     logger.debug("health_check_requested")
     return {"status": "ok"}
+
+
+@app.get("/", response_class=HTMLResponse)
+def ui(request: Request):
+    """Serve the compatibility testing UI."""
+    logger.debug("ui_requested")
+    # Get API key from settings for the UI
+    api_key = settings.service_api_key
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "api_key": api_key
+    })
 
 
 @app.post("/generate", response_model=GenerateResponse)

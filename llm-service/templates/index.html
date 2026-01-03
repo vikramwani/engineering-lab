@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Compatibility Service - Testing UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">LLM Compatibility Service</h1>
+            <p class="text-gray-600">Test product compatibility evaluation with multi-agent debate architecture</p>
+        </div>
+
+        <!-- API Key Input -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h2 class="text-lg font-semibold text-blue-800 mb-2">API Configuration</h2>
+            <div>
+                <label class="block text-sm font-medium text-blue-700 mb-1">API Key</label>
+                <input type="password" id="apiKey" class="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="{{ api_key }}" placeholder="Enter your API key">
+                <p class="text-xs text-blue-600 mt-1">Your API key is automatically loaded from server environment</p>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Product Information</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Product A -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-3">Product A</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">ID</label>
+                            <input type="text" id="productA_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="PROD-A-001">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Title</label>
+                            <input type="text" id="productA_title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="iPhone 15 Pro Max">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Category</label>
+                            <input type="text" id="productA_category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="Smartphone">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Brand</label>
+                            <input type="text" id="productA_brand" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="Apple">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Attributes (JSON)</label>
+                            <textarea id="productA_attributes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm">{"screen_size": "6.7 inches", "storage": "256GB", "color": "Natural Titanium"}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product B -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-700 mb-3">Product B</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">ID</label>
+                            <input type="text" id="productB_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="PROD-B-002">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Title</label>
+                            <input type="text" id="productB_title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="MagSafe Charger">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Category</label>
+                            <input type="text" id="productB_category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="Charger">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Brand</label>
+                            <input type="text" id="productB_brand" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="Apple">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Attributes (JSON)</label>
+                            <textarea id="productB_attributes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm">{"power": "15W", "connector": "MagSafe", "compatibility": "iPhone 12 and later"}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 mt-6">
+                <button onclick="evaluateCompatibility()" class="bg-primary text-white px-6 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
+                    Evaluate Compatibility
+                </button>
+                <button onclick="explainCompatibility()" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2 transition-colors">
+                    Explain Compatibility
+                </button>
+                <button onclick="clearResults()" class="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors">
+                    Clear Results
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden">
+            <!-- Basic Results -->
+            <div id="basicResults" class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Compatibility Result</h2>
+                <div id="basicResultsContent"></div>
+            </div>
+
+            <!-- Agent Decisions (for explain endpoint) -->
+            <div id="agentDecisions" class="hidden bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Agent Decisions</h2>
+                <div id="agentDecisionsContent"></div>
+            </div>
+
+            <!-- Alignment Summary (for explain endpoint) -->
+            <div id="alignmentSummary" class="hidden bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Alignment Analysis</h2>
+                <div id="alignmentSummaryContent"></div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p class="mt-2 text-gray-600">Processing compatibility evaluation...</p>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Error</h3>
+                    <div id="errorMessage" class="mt-2 text-sm text-red-700"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        
+        function getApiKey() {
+            return document.getElementById('apiKey').value || '{{ api_key }}';
+        }
+
+        function getProductData() {
+            try {
+                const productA = {
+                    id: document.getElementById('productA_id').value,
+                    title: document.getElementById('productA_title').value,
+                    category: document.getElementById('productA_category').value,
+                    brand: document.getElementById('productA_brand').value,
+                    attributes: JSON.parse(document.getElementById('productA_attributes').value || '{}')
+                };
+
+                const productB = {
+                    id: document.getElementById('productB_id').value,
+                    title: document.getElementById('productB_title').value,
+                    category: document.getElementById('productB_category').value,
+                    brand: document.getElementById('productB_brand').value,
+                    attributes: JSON.parse(document.getElementById('productB_attributes').value || '{}')
+                };
+
+                return { product_a: productA, product_b: productB };
+            } catch (e) {
+                throw new Error('Invalid JSON in attributes fields: ' + e.message);
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+            hideLoading();
+        }
+
+        function showResults() {
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('error').classList.add('hidden');
+            hideLoading();
+        }
+
+        async function evaluateCompatibility() {
+            try {
+                showLoading();
+                const data = getProductData();
+
+                const response = await fetch(`${API_BASE}/compatibility/evaluate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': getApiKey()
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                displayBasicResults(result);
+                
+                // Hide agent-specific sections for basic evaluation
+                document.getElementById('agentDecisions').classList.add('hidden');
+                document.getElementById('alignmentSummary').classList.add('hidden');
+                
+                showResults();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function explainCompatibility() {
+            try {
+                showLoading();
+                const data = getProductData();
+
+                const response = await fetch(`${API_BASE}/compatibility/explain`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': getApiKey()
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                displayBasicResults(result.final_decision);
+                displayAgentDecisions(result.agent_decisions);
+                displayAlignmentSummary(result.alignment_summary);
+                
+                // Show agent-specific sections for detailed explanation
+                document.getElementById('agentDecisions').classList.remove('hidden');
+                document.getElementById('alignmentSummary').classList.remove('hidden');
+                
+                showResults();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function displayBasicResults(result) {
+            const compatibleBadge = result.compatible 
+                ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Compatible</span>'
+                : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Not Compatible</span>';
+
+            const confidenceColor = result.confidence >= 0.8 ? 'text-green-600' : 
+                                   result.confidence >= 0.5 ? 'text-yellow-600' : 'text-red-600';
+
+            const evidenceList = result.evidence.map(item => `<li class="text-gray-600">${item}</li>`).join('');
+
+            document.getElementById('basicResultsContent').innerHTML = `
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500">Compatibility</label>
+                        <div class="mt-1">${compatibleBadge}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500">Relationship</label>
+                        <div class="mt-1 text-gray-900 font-medium">${result.relationship.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-500">Confidence</label>
+                        <div class="mt-1 ${confidenceColor} font-medium">${(result.confidence * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-500 mb-2">Explanation</label>
+                    <p class="text-gray-700 bg-gray-50 p-3 rounded-md">${result.explanation}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-500 mb-2">Evidence</label>
+                    <ul class="list-disc list-inside space-y-1 bg-gray-50 p-3 rounded-md">${evidenceList}</ul>
+                </div>
+            `;
+        }
+
+        function displayAgentDecisions(decisions) {
+            const decisionsHtml = decisions.map(decision => {
+                const compatibleBadge = decision.compatible 
+                    ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Compatible</span>'
+                    : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Not Compatible</span>';
+
+                const confidenceColor = decision.confidence >= 0.8 ? 'text-green-600' : 
+                                       decision.confidence >= 0.5 ? 'text-yellow-600' : 'text-red-600';
+
+                const evidenceList = decision.evidence.map(item => `<li class="text-sm text-gray-600">${item}</li>`).join('');
+
+                return `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-medium text-gray-800">${decision.agent_name}</h3>
+                            <div class="flex items-center space-x-3">
+                                ${compatibleBadge}
+                                <span class="${confidenceColor} font-medium text-sm">${(decision.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Relationship</label>
+                                <div class="text-sm text-gray-900">${decision.relationship.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Reasoning</label>
+                            <p class="text-sm text-gray-700 bg-gray-50 p-2 rounded">${decision.reasoning}</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Evidence</label>
+                            <ul class="list-disc list-inside space-y-1 text-sm bg-gray-50 p-2 rounded">${evidenceList}</ul>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('agentDecisionsContent').innerHTML = `
+                <div class="space-y-4">${decisionsHtml}</div>
+            `;
+        }
+
+        function displayAlignmentSummary(summary) {
+            const agreementBadge = (agreement) => agreement 
+                ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Agree</span>'
+                : '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Disagree</span>';
+
+            const disagreementAreas = summary.disagreement_areas.length > 0 
+                ? summary.disagreement_areas.map(area => `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">${area.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>`).join(' ')
+                : '<span class="text-gray-500 text-sm">None</span>';
+
+            document.getElementById('alignmentSummaryContent').innerHTML = `
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-2">Agent Agreement</label>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">Compatibility Assessment</span>
+                                    ${agreementBadge(summary.compatible_agreement)}
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">Relationship Type</span>
+                                    ${agreementBadge(summary.relationship_agreement)}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-2">Disagreement Areas</label>
+                            <div>${disagreementAreas}</div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500 mb-2">Confidence Metrics</label>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">Average Confidence</span>
+                                    <span class="text-sm font-medium text-gray-900">${(summary.avg_confidence * 100).toFixed(1)}%</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">Confidence Spread</span>
+                                    <span class="text-sm font-medium text-gray-900">${(summary.confidence_spread * 100).toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function clearResults() {
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('loading').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

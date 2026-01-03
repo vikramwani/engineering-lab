@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from ..auth import require_api_key
 from ..client import LLMService
 from ..dependencies import get_llm_service
-from .models import CompatibilityRequest, CompatibilityResponse
+from .models import CompatibilityRequest, CompatibilityResponse, CompatibilityExplanation
 from .service import CompatibilityService
 
 logger = logging.getLogger(__name__)
@@ -94,6 +94,83 @@ def evaluate_compatibility(
         latency_ms = int((time.time() - start_time) * 1000)
         logger.error(
             "compatibility_request_unexpected_error",
+            extra={
+                "product_a_id": request.product_a.id,
+                "product_b_id": request.product_b.id,
+                "error_type": type(e).__name__,
+                "error": str(e)[:200],
+                "latency_ms": latency_ms,
+                "provider": service.llm.settings.llm_provider,
+            },
+            exc_info=True,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post(
+    "/explain",
+    response_model=CompatibilityExplanation,
+)
+def explain_compatibility(
+    request: CompatibilityRequest,
+    service: CompatibilityService = Depends(get_service),
+):
+    """Provide detailed explanation of compatibility evaluation with per-agent decisions."""
+    start_time = time.time()
+
+    logger.info(
+        "compatibility_explain_request_started",
+        extra={
+            "product_a_id": request.product_a.id,
+            "product_a_category": request.product_a.category,
+            "product_b_id": request.product_b.id,
+            "product_b_category": request.product_b.category,
+            "provider": service.llm.settings.llm_provider,
+        },
+    )
+
+    try:
+        result = service.explain(request)
+
+        latency_ms = int((time.time() - start_time) * 1000)
+
+        logger.info(
+            "compatibility_explain_request_completed",
+            extra={
+                "product_a_id": request.product_a.id,
+                "product_b_id": request.product_b.id,
+                "compatible": result.final_decision.compatible,
+                "relationship": result.final_decision.relationship,
+                "confidence": result.final_decision.confidence,
+                "agent_count": len(result.agent_decisions),
+                "compatible_agreement": result.alignment_summary.compatible_agreement,
+                "relationship_agreement": result.alignment_summary.relationship_agreement,
+                "latency_ms": latency_ms,
+                "provider": service.llm.settings.llm_provider,
+                "request_id": result.request_id,
+            },
+        )
+
+        return result
+
+    except ValueError as e:
+        latency_ms = int((time.time() - start_time) * 1000)
+        logger.warning(
+            "compatibility_explain_request_validation_error",
+            extra={
+                "product_a_id": request.product_a.id,
+                "product_b_id": request.product_b.id,
+                "error": str(e)[:200],
+                "latency_ms": latency_ms,
+                "provider": service.llm.settings.llm_provider,
+            },
+        )
+        raise HTTPException(status_code=422, detail=str(e))
+
+    except Exception as e:
+        latency_ms = int((time.time() - start_time) * 1000)
+        logger.error(
+            "compatibility_explain_request_unexpected_error",
             extra={
                 "product_a_id": request.product_a.id,
                 "product_b_id": request.product_b.id,

@@ -173,6 +173,113 @@ Content-Type: application/json
 }
 ```
 
+### Compatibility Explanation (Detailed Analysis)
+
+**POST** `/compatibility/explain`
+
+Get detailed explanation of compatibility evaluation with per-agent decisions and alignment analysis.
+
+**Headers**
+```
+X-API-Key: your-api-key
+Content-Type: application/json
+```
+
+**Request Body**
+Same as `/compatibility/evaluate`
+
+**Response**
+```json
+{
+  "final_decision": {
+    "compatible": true,
+    "relationship": "replacement_filter",
+    "confidence": 0.95,
+    "explanation": "Final decision based on multi-agent analysis...",
+    "evidence": ["Evidence point 1", "Evidence point 2"]
+  },
+  "agent_decisions": [
+    {
+      "agent_name": "Advocate Agent",
+      "compatible": true,
+      "relationship": "replacement_filter",
+      "confidence": 0.92,
+      "explanation": "Advocate's reasoning...",
+      "evidence": ["Supporting evidence 1", "Supporting evidence 2"],
+      "reasoning": "Detailed reasoning from advocate perspective"
+    },
+    {
+      "agent_name": "Skeptic Agent", 
+      "compatible": true,
+      "relationship": "replacement_filter",
+      "confidence": 0.88,
+      "explanation": "Skeptic's reasoning...",
+      "evidence": ["Counter-evidence considered"],
+      "reasoning": "Detailed reasoning from skeptic perspective"
+    },
+    {
+      "agent_name": "Judge Agent",
+      "compatible": true,
+      "relationship": "replacement_filter", 
+      "confidence": 0.95,
+      "explanation": "Judge's final reasoning...",
+      "evidence": ["Reconciled evidence"],
+      "reasoning": "Final decision rationale"
+    }
+  ],
+  "alignment_summary": {
+    "compatible_agreement": true,
+    "relationship_agreement": true,
+    "confidence_spread": 0.04,
+    "avg_confidence": 0.92,
+    "disagreement_areas": []
+  },
+  "request_id": "abc123"
+}
+```
+
+---
+
+## 🎨 Web UI for Testing
+
+The service includes a lightweight web interface for testing and debugging compatibility evaluations.
+
+### Accessing the UI
+
+Navigate to `http://localhost:8000/` when the service is running to access the testing interface.
+
+### UI Features
+
+- **Interactive Product Input**: Editable forms for Product A and Product B with JSON attribute editing
+- **Dual Evaluation Modes**: 
+  - **Evaluate**: Quick compatibility assessment
+  - **Explain**: Detailed multi-agent analysis with per-agent decisions
+- **Visual Results Display**: 
+  - Compatibility status with color-coded badges
+  - Confidence scores with visual indicators
+  - Evidence lists and explanations
+  - Agent decision breakdown (explain mode)
+  - Alignment analysis showing agent agreement/disagreement
+- **Real-time Testing**: Immediate API calls with loading states and error handling
+- **Responsive Design**: Works on desktop and mobile devices
+
+### Using the UI
+
+1. **Enter Product Information**: Fill in the product details for both products
+2. **Choose Evaluation Type**:
+   - Click **"Evaluate Compatibility"** for basic assessment
+   - Click **"Explain Compatibility"** for detailed multi-agent analysis
+3. **Review Results**: 
+   - Basic results show final decision, relationship, and confidence
+   - Detailed results show individual agent decisions and alignment analysis
+4. **Clear and Repeat**: Use "Clear Results" to reset and test new product combinations
+
+The UI is perfect for:
+- **Development Testing**: Quick validation of service functionality
+- **Demo Purposes**: Showcasing the multi-agent debate system
+- **Debugging**: Understanding how agents reach their decisions
+- **API Exploration**: Learning the request/response formats
+
 ---
 
 ## 🔗 Relationship Types
@@ -312,6 +419,9 @@ python3 scripts/validate_compatibility.py
 # Health check
 curl http://localhost:8000/health
 
+# Access web UI
+open http://localhost:8000/
+
 # Generate text
 curl -X POST http://localhost:8000/generate \
   -H "X-API-Key: your-api-key" \
@@ -320,6 +430,12 @@ curl -X POST http://localhost:8000/generate \
 
 # Evaluate compatibility
 curl -X POST http://localhost:8000/compatibility/evaluate \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d @test_payload.json
+
+# Get detailed explanation
+curl -X POST http://localhost:8000/compatibility/explain \
   -H "X-API-Key: your-api-key" \
   -H "Content-Type: application/json" \
   -d @test_payload.json

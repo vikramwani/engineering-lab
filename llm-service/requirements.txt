@@ -4,3 +4,4 @@ openai
 python-dotenv
 python-json-logger
 pydantic
+jinja2

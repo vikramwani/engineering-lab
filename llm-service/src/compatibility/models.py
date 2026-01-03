@@ -45,3 +45,34 @@ class CompatibilityResponse(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     explanation: str
     evidence: List[str]
+
+
+class AgentDecision(BaseModel):
+    """Individual agent decision for explain endpoint."""
+    
+    agent_name: str
+    compatible: bool
+    relationship: CompatibilityRelationship
+    confidence: float = Field(ge=0.0, le=1.0)
+    explanation: str
+    evidence: List[str]
+    reasoning: str
+
+
+class AlignmentSummary(BaseModel):
+    """Summary of agent alignment for explain endpoint."""
+    
+    compatible_agreement: bool
+    relationship_agreement: bool
+    confidence_spread: float
+    avg_confidence: float
+    disagreement_areas: List[str]
+
+
+class CompatibilityExplanation(BaseModel):
+    """Detailed explanation response with per-agent decisions."""
+    
+    final_decision: CompatibilityResponse
+    agent_decisions: List[AgentDecision]
+    alignment_summary: AlignmentSummary
+    request_id: str

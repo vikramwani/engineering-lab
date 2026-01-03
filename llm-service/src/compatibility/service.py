@@ -25,7 +25,13 @@ from .agents.judge import JudgeAgent
 from .agents.skeptic import SkepticAgent
 from .agents.base import AgentContext
 from .config.settings import get_compatibility_settings
-from .models import CompatibilityRequest, CompatibilityResponse
+from .models import (
+    CompatibilityRequest, 
+    CompatibilityResponse, 
+    CompatibilityExplanation,
+    AgentDecision,
+    AlignmentSummary
+)
 from .prompts.loader import get_prompt_loader
 
 logger = logging.getLogger(__name__)
@@ -177,7 +183,107 @@ class CompatibilityService:
             if isinstance(e, (ValueError, TimeoutError)):
                 raise
             else:
-                raise RuntimeError(f"Compatibility evaluation failed: {e}") from e
+                raise RuntimeError(
+                    f"Compatibility evaluation failed: {e}"
+                ) from e
+
+    def explain(self, request: CompatibilityRequest) -> CompatibilityExplanation:
+        """Provide detailed explanation of compatibility evaluation process.
+        
+        This method runs the full multi-agent debate and returns detailed
+        information about each agent's decision, alignment analysis, and
+        the final reconciled result.
+        
+        Args:
+            request: Compatibility evaluation request with product information
+            
+        Returns:
+            CompatibilityExplanation: Detailed breakdown of evaluation process
+            
+        Raises:
+            ValueError: If request is invalid or agent responses are malformed
+            RuntimeError: If evaluation fails due to service issues
+            TimeoutError: If evaluation exceeds configured timeout
+        """
+        # Generate unique request ID for tracing
+        request_id = self._generate_request_id()
+        start_time = time.time()
+
+        logger.info(
+            "multi_agent_explanation_started",
+            extra={
+                "product_a_id": request.product_a.id,
+                "product_a_category": request.product_a.category,
+                "product_a_brand": request.product_a.brand,
+                "product_b_id": request.product_b.id,
+                "product_b_category": request.product_b.category,
+                "product_b_brand": request.product_b.brand,
+                "provider": self.llm.settings.llm_provider,
+                "model": self.llm.settings.model,
+                "request_id": request_id,
+            }
+        )
+
+        try:
+            # Create shared context for all agents
+            context = AgentContext(
+                product_a=request.product_a,
+                product_b=request.product_b,
+                request_id=request_id,
+            )
+
+            # Execute multi-agent debate with timeout protection
+            with self._execution_timeout_context():
+                # Run advocate and skeptic agents (the debate)
+                advocate_result = self._run_agent_with_logging(
+                    self.advocate_agent, context, "advocate"
+                )
+                
+                skeptic_result = self._run_agent_with_logging(
+                    self.skeptic_agent, context, "skeptic"
+                )
+                
+                # Judge resolves the debate
+                judge_result = self._run_judge_with_logging(
+                    context, advocate_result, skeptic_result
+                )
+            
+            # Create detailed explanation response
+            explanation = self._create_explanation_response(
+                request_id, advocate_result, skeptic_result, judge_result
+            )
+            
+            # Log final evaluation metrics
+            evaluation_time = time.time() - start_time
+            self._log_explanation_completion(
+                request, explanation, evaluation_time, request_id
+            )
+            
+            return explanation
+            
+        except Exception as e:
+            evaluation_time = time.time() - start_time
+            logger.error(
+                "multi_agent_explanation_failed",
+                extra={
+                    "product_a_id": request.product_a.id,
+                    "product_b_id": request.product_b.id,
+                    "error_type": type(e).__name__,
+                    "error": str(e)[:200],  # Truncate long error messages
+                    "provider": self.llm.settings.llm_provider,
+                    "evaluation_time_seconds": evaluation_time,
+                    "request_id": request_id,
+                },
+                exc_info=True,
+            )
+            
+            # Re-raise with appropriate exception type
+            if isinstance(e, (ValueError, TimeoutError)):
+                raise
+            else:
+                raise RuntimeError(
+                    f"Compatibility explanation failed: {e}"
+                ) from e
 
     def _generate_request_id(self) -> str:
         """Generate a unique request ID for tracing."""
@@ -324,6 +430,150 @@ class CompatibilityService:
             confidence=judge_result.confidence,
             explanation=judge_result.explanation,
             evidence=judge_result.evidence,
+        )
+
+    def _create_explanation_response(
+        self,
+        request_id: str,
+        advocate_result: "AgentResult",
+        skeptic_result: "AgentResult", 
+        judge_result: "AgentResult"
+    ) -> CompatibilityExplanation:
+        """Create detailed explanation response from agent results.
+        
+        Args:
+            request_id: Unique request identifier
+            advocate_result: Result from advocate agent
+            skeptic_result: Result from skeptic agent
+            judge_result: Result from judge agent
+            
+        Returns:
+            CompatibilityExplanation: Detailed explanation with all agent decisions
+        """
+        # Create individual agent decisions
+        agent_decisions = [
+            AgentDecision(
+                agent_name=self.advocate_agent.name,
+                compatible=advocate_result.compatible,
+                relationship=advocate_result.relationship,
+                confidence=advocate_result.confidence,
+                explanation=advocate_result.explanation,
+                evidence=advocate_result.evidence,
+                reasoning=advocate_result.reasoning if hasattr(advocate_result, 'reasoning') else advocate_result.explanation
+            ),
+            AgentDecision(
+                agent_name=self.skeptic_agent.name,
+                compatible=skeptic_result.compatible,
+                relationship=skeptic_result.relationship,
+                confidence=skeptic_result.confidence,
+                explanation=skeptic_result.explanation,
+                evidence=skeptic_result.evidence,
+                reasoning=skeptic_result.reasoning if hasattr(skeptic_result, 'reasoning') else skeptic_result.explanation
+            ),
+            AgentDecision(
+                agent_name=self.judge_agent.name,
+                compatible=judge_result.compatible,
+                relationship=judge_result.relationship,
+                confidence=judge_result.confidence,
+                explanation=judge_result.explanation,
+                evidence=judge_result.evidence,
+                reasoning=judge_result.reasoning if hasattr(judge_result, 'reasoning') else judge_result.explanation
+            )
+        ]
+        
+        # Create alignment summary
+        alignment_summary = self._create_alignment_summary(
+            advocate_result, skeptic_result, judge_result
+        )
+        
+        # Create final decision response
+        final_decision = self._create_compatibility_response(judge_result)
+        
+        return CompatibilityExplanation(
+            final_decision=final_decision,
+            agent_decisions=agent_decisions,
+            alignment_summary=alignment_summary,
+            request_id=request_id
+        )
+
+    def _create_alignment_summary(
+        self,
+        advocate_result: "AgentResult",
+        skeptic_result: "AgentResult",
+        judge_result: "AgentResult"
+    ) -> AlignmentSummary:
+        """Create alignment summary analyzing agent agreement.
+        
+        Args:
+            advocate_result: Result from advocate agent
+            skeptic_result: Result from skeptic agent
+            judge_result: Result from judge agent
+            
+        Returns:
+            AlignmentSummary: Analysis of agent alignment and disagreements
+        """
+        # Check compatibility agreement
+        compatible_agreement = (
+            advocate_result.compatible == skeptic_result.compatible
+        )
+        
+        # Check relationship agreement
+        relationship_agreement = (
+            advocate_result.relationship == skeptic_result.relationship
+        )
+        
+        # Calculate confidence metrics
+        confidences = [
+            advocate_result.confidence,
+            skeptic_result.confidence,
+            judge_result.confidence
+        ]
+        avg_confidence = sum(confidences) / len(confidences)
+        confidence_spread = max(confidences) - min(confidences)
+        
+        # Identify disagreement areas
+        disagreement_areas = []
+        if not compatible_agreement:
+            disagreement_areas.append("compatibility_assessment")
+        if not relationship_agreement:
+            disagreement_areas.append("relationship_type")
+        if confidence_spread > 0.3:  # Significant confidence spread
+            disagreement_areas.append("confidence_levels")
+            
+        return AlignmentSummary(
+            compatible_agreement=compatible_agreement,
+            relationship_agreement=relationship_agreement,
+            confidence_spread=confidence_spread,
+            avg_confidence=avg_confidence,
+            disagreement_areas=disagreement_areas
+        )
+
+    def _log_explanation_completion(
+        self,
+        request: CompatibilityRequest,
+        explanation: CompatibilityExplanation,
+        evaluation_time: float,
+        request_id: str,
+    ) -> None:
+        """Log comprehensive explanation completion metrics."""
+        logger.info(
+            "multi_agent_explanation_completed",
+            extra={
+                "product_a_id": request.product_a.id,
+                "product_b_id": request.product_b.id,
+                "compatible": explanation.final_decision.compatible,
+                "relationship": explanation.final_decision.relationship,
+                "confidence": explanation.final_decision.confidence,
+                "agent_count": len(explanation.agent_decisions),
+                "compatible_agreement": explanation.alignment_summary.compatible_agreement,
+                "relationship_agreement": explanation.alignment_summary.relationship_agreement,
+                "confidence_spread": explanation.alignment_summary.confidence_spread,
+                "disagreement_areas": explanation.alignment_summary.disagreement_areas,
+                "provider": self.llm.settings.llm_provider,
+                "model": self.llm.settings.model,
+                "evaluation_time_seconds": evaluation_time,
+                "request_id": request_id,
+            },
         )
 
     def _log_evaluation_completion(
