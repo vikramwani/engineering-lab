@@ -6,6 +6,10 @@ A production-ready, domain-agnostic Python framework for building multi-agent ev
 
 The Agent Alignment Framework enables robust decision-making through multi-perspective evaluation, where AI agents analyze problems from different viewpoints, detect disagreements, and synthesize final decisions with calibrated confidence. The framework is designed as a **pure reasoning engine** that can be embedded in any system without modification.
 
+📘 **Design & Positioning**  
+See [docs/positioning.md](docs/positioning.md) for how this framework fits alongside agent orchestration systems like Strands.
+
+
 ### Key Principles
 
 - **Deterministic**: Same inputs always produce identical outputs with no randomness
@@ -284,6 +288,7 @@ config = AgentConfig(
 
 ## 📚 Documentation
 
+- [Framework Positioning](docs/positioning.md) - Purpose and ecosystem fit
 - [Architecture Guide](docs/architecture.md) - Deep dive into framework design
 - [Adding New Use Cases](docs/adding-a-new-use-case.md) - Step-by-step guide
 - [Human-in-the-Loop Integration](docs/human-in-the-loop.md) - HITL patterns
