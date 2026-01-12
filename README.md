@@ -59,22 +59,22 @@ This repository contains multiple interconnected projects that form a complete e
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────────┐    ┌─────────────────────────────────┐ │
-│  │   LLM Service   │◄───┤     Agent Alignment UI         │ │
+│  │   LLM Service   │◄───┤     Agent Alignment UI          │ │
 │  │                 │    │                                 │ │
-│  │ • Provider      │    │ • FastAPI Backend              │ │
-│  │   Abstraction   │    │ • React Frontend               │ │
-│  │ • Prompt Mgmt   │    │ • Real-time Updates            │ │
-│  │ • Logging       │    │ • History Management           │ │
-│  └─────────────────┘    │ • API Key Management           │ │
+│  │ • Provider      │    │ • FastAPI Backend               │ │
+│  │   Abstraction   │    │ • React Frontend                │ │
+│  │ • Prompt Mgmt   │    │ • Real-time Updates             │ │
+│  │ • Logging       │    │ • History Management            │ │
+│  └─────────────────┘    │ • API Key Management            │ │
 │                         └─────────────────┬───────────────┘ │
 │                                           │                 │
 │  ┌─────────────────┐    ┌─────────────────▼───────────────┐ │
-│  │   Hello LLM     │    │   Agent Alignment Framework    │ │
+│  │   Hello LLM     │    │   Agent Alignment Framework     │ │
 │  │                 │    │                                 │ │
-│  │ • Simple Demo   │    │ • Multi-agent Orchestration    │ │
-│  │ • Quick Testing │    │ • Alignment Analysis           │ │
-│  │ • Sandbox       │    │ • HITL Escalation             │ │
-│  └─────────────────┘    │ • Decision Schemas             │ │
+│  │ • Simple Demo   │    │ • Multi-agent Orchestration     │ │
+│  │ • Quick Testing │    │ • Alignment Analysis            │ │
+│  │ • Sandbox       │    │ • HITL Escalation               │ │
+│  └─────────────────┘    │ • Decision Schemas              │ │
 │                         └─────────────────────────────────┘ │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
