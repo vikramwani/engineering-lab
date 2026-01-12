@@ -1,262 +1,227 @@
-"""Compatibility-specific agent implementations.
+"""Agent implementations for compatibility evaluation.
 
-This module provides agent implementations specialized for product
-compatibility evaluation using the generic agent framework.
+This module provides specialized agent implementations for product compatibility
+evaluation, extending the base LLMAgent class with domain-specific behavior.
 """
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, List
 
+from agent_alignment import BaseAgent, AgentDecision, EvaluationTask, AgentRole, LLMClient
 from agent_alignment.core.agent import LLMAgent
-from agent_alignment.core.models import AgentDecision, EvaluationTask
-from agent_alignment.utils.validation import (
-    extract_json_from_text,
-    normalize_confidence,
-    parse_evidence_list,
-    sanitize_text_output,
-)
 
 
 class CompatibilityAgent(LLMAgent):
-    """Agent specialized for product compatibility evaluation.
+    """Specialized agent for product compatibility evaluation.
     
-    This agent understands product compatibility concepts and can evaluate
-    relationships between products using structured prompts and outputs.
+    This agent extends the LLMAgent class with compatibility-specific
+    prompt formatting and response processing.
     """
     
-    def _build_prompt(self, task: EvaluationTask) -> str:
-        """Build the prompt for compatibility evaluation.
+    def __init__(self, role: AgentRole, llm_client: LLMClient):
+        """Initialize compatibility agent.
         
         Args:
-            task: The evaluation task
+            role: Agent role configuration
+            llm_client: LLM client for generating responses
+        """
+        super().__init__(role, llm_client)
+    
+    def _build_prompt(self, task: EvaluationTask) -> str:
+        """Build compatibility-specific prompt using external template.
+        
+        Args:
+            task: Evaluation task with product compatibility context
             
         Returns:
-            str: Formatted prompt for the LLM
+            str: Formatted prompt for compatibility evaluation
         """
-        # Load the base prompt template
-        template = self._load_prompt_template()
-        
-        # Extract product information
+        # Extract products from context
         product_a = task.context.get("product_a", {})
         product_b = task.context.get("product_b", {})
-        
-        # Format product information
-        product_a_info = self._format_product_info(product_a, "Product A")
-        product_b_info = self._format_product_info(product_b, "Product B")
-        
-        # Get relationship types if available
         relationship_types = task.context.get("relationship_types", [])
-        relationship_info = ""
-        if relationship_types:
-            relationship_info = f"\nValid relationship types: {', '.join(relationship_types)}"
         
-        # Format the complete prompt
-        prompt = template.format(
-            agent_role=self.role.instruction,
-            evaluation_criteria=task.evaluation_criteria,
-            product_a_info=product_a_info,
-            product_b_info=product_b_info,
-            relationship_info=relationship_info,
-            task_type=task.task_type,
-        )
+        # Prepare template variables
+        template_variables = {
+            "role_type": self.role.role_type,
+            "role_instruction": self.role.instruction,
+            "evaluation_criteria": task.evaluation_criteria,
+            "product_a_info": self._format_product_info(product_a),
+            "product_b_info": self._format_product_info(product_b),
+            "decision_schema_type": task.decision_schema.get_schema_type(),
+            "relationship_types": ", ".join(relationship_types) if relationship_types else "N/A",
+            "task_context": self._format_task_inputs(task),
+        }
         
-        return prompt
+        # Use inline template since external templates have path issues
+        return self._create_inline_prompt(task, product_a, product_b, relationship_types)
     
     def _parse_response(self, task: EvaluationTask, response: str, request_id: str) -> AgentDecision:
-        """Parse the LLM response into structured output.
+        """Parse LLM response into structured AgentDecision.
         
         Args:
-            task: The original evaluation task
+            task: Original evaluation task
             response: Raw LLM response
             request_id: Request ID for tracing
             
         Returns:
-            AgentOutput: Parsed and validated agent output
+            AgentDecision: Parsed agent decision
         """
-        # Extract JSON from response
-        json_data = extract_json_from_text(response)
-        
-        if json_data is None:
-            # Fallback: try to parse key information from text
-            return self._parse_fallback_response(task, response, request_id)
-        
-        # Extract required fields
         try:
-            decision = json_data.get("decision") or json_data.get("relationship")
-            confidence = json_data.get("confidence", 0.5)
-            reasoning = json_data.get("reasoning") or json_data.get("explanation", "")
-            evidence = json_data.get("evidence", [])
+            # Try to parse JSON response
+            if response.strip().startswith('{'):
+                parsed = json.loads(response.strip())
+            else:
+                # Extract JSON from response if embedded in text
+                start_idx = response.find('{')
+                end_idx = response.rfind('}') + 1
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = response[start_idx:end_idx]
+                    parsed = json.loads(json_str)
+                else:
+                    raise ValueError("No JSON found in response")
             
-            # Validate and normalize
-            decision = self._normalize_decision(decision, task)
-            confidence = normalize_confidence(confidence)
-            reasoning = sanitize_text_output(reasoning, max_length=1000)
-            evidence = parse_evidence_list(evidence)
+            # Extract decision components
+            decision_value = parsed.get("decision", "insufficient_information")
+            confidence = self._validate_confidence(parsed.get("confidence", 0.5))
+            reasoning = parsed.get("reasoning", "No reasoning provided")
+            evidence = parsed.get("evidence", [])
+            
+            # Ensure evidence is a list
+            if not isinstance(evidence, list):
+                evidence = [str(evidence)] if evidence else []
             
             return AgentDecision(
                 agent_name=self.role.name,
                 role_type=self.role.role_type,
-                decision_value=decision,
+                decision_value=decision_value,
                 confidence=confidence,
                 rationale=reasoning,
                 evidence=evidence,
                 metadata={
                     "request_id": request_id,
-                    "task_type": task.task_type,
-                    "response_format": "json",
+                    "task_id": task.task_id,
+                    "raw_response_length": len(response),
                 }
             )
             
-        except Exception as e:
-            raise ValueError(f"Failed to parse agent response: {e}. Response: {response[:200]}...")
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            # Fallback parsing for non-JSON responses
+            return AgentDecision(
+                agent_name=self.role.name,
+                role_type=self.role.role_type,
+                decision_value="insufficient_information",
+                confidence=0.3,
+                rationale=f"Failed to parse response: {str(e)}. Raw response: {response[:200]}...",
+                evidence=[],
+                metadata={
+                    "request_id": request_id,
+                    "task_id": task.task_id,
+                    "parse_error": str(e),
+                    "raw_response": response[:500],  # Truncated for logging
+                }
+            )
     
-    def _parse_fallback_response(self, task: EvaluationTask, response: str, request_id: str) -> AgentDecision:
-        """Parse response when JSON extraction fails.
+    def _create_inline_prompt(
+        self, 
+        task: EvaluationTask, 
+        product_a: Dict[str, Any], 
+        product_b: Dict[str, Any],
+        relationship_types: List[str]
+    ) -> str:
+        """Create compatibility-specific prompt inline (fallback).
         
         Args:
-            task: The evaluation task
-            response: Raw response text
-            request_id: Request ID for tracing
+            task: Evaluation task
+            product_a: First product information
+            product_b: Second product information
+            relationship_types: Available relationship types
             
         Returns:
-            AgentDecision: Best-effort parsed output
+            str: Formatted prompt for compatibility evaluation
         """
-        # Try to extract key information from text
-        lines = response.split('\n')
+        # Format product information
+        product_a_info = self._format_product_info(product_a)
+        product_b_info = self._format_product_info(product_b)
         
-        decision = None
-        confidence = 0.5
-        reasoning = response  # Use full response as reasoning
-        evidence = []
+        prompt = f"""
+You are evaluating the compatibility between two products. Your role is: {self.role.role_type}
+
+EVALUATION CRITERIA:
+{task.evaluation_criteria}
+
+PRODUCT A:
+{product_a_info}
+
+PRODUCT B:
+{product_b_info}
+
+ROLE INSTRUCTION:
+{self.role.instruction}
+
+DECISION SCHEMA:
+- Type: {task.decision_schema.get_schema_type()}
+"""
         
-        # Look for decision indicators
-        for line in lines:
-            line_lower = line.lower().strip()
-            
-            # Look for compatibility decisions
-            if any(word in line_lower for word in ["compatible", "incompatible", "relationship"]):
-                # Extract potential relationship types
-                relationship_types = task.context.get("relationship_types", [])
-                for rel_type in relationship_types:
-                    if rel_type.lower() in line_lower:
-                        decision = rel_type
-                        break
-                
-                # Fallback to boolean compatibility
-                if decision is None:
-                    if "compatible" in line_lower and "incompatible" not in line_lower:
-                        decision = True
-                    elif "incompatible" in line_lower:
-                        decision = False
-            
-            # Look for confidence indicators
-            if "confidence" in line_lower:
-                import re
-                conf_match = re.search(r'(\d+(?:\.\d+)?)', line)
-                if conf_match:
-                    confidence = normalize_confidence(float(conf_match.group(1)))
+        if relationship_types:
+            prompt += f"""
+- Available relationship types: {', '.join(relationship_types)}
+"""
         
-        # Default decision if none found
-        if decision is None:
-            if task.decision_schema.__class__.__name__ == "BooleanDecisionSchema":
-                decision = True  # Default to compatible
-            else:
-                decision = "insufficient_information"
+        prompt += f"""
+
+Please provide your evaluation in the following JSON format:
+{{
+    "decision": "<your_decision>",
+    "confidence": <confidence_score_0_to_1>,
+    "reasoning": "<detailed_reasoning>",
+    "evidence": ["<evidence_item_1>", "<evidence_item_2>", ...]
+}}
+
+Consider the following factors in your evaluation:
+- Physical compatibility (connectors, dimensions, power requirements)
+- Functional compatibility (intended use cases, feature support)
+- Brand compatibility (official support, warranty implications)
+- Safety and regulatory compliance
+- User experience and usability
+
+Provide a thorough analysis based on your assigned role perspective.
+"""
         
-        return AgentDecision(
-            agent_name=self.role.name,
-            role_type=self.role.role_type,
-            decision_value=decision,
-            confidence=confidence,
-            rationale=sanitize_text_output(reasoning, max_length=1000),
-            evidence=evidence,
-            metadata={
-                "request_id": request_id,
-                "task_type": task.task_type,
-                "response_format": "fallback",
-                "parsing_warning": "JSON extraction failed, used fallback parsing",
-            }
-        )
+        return prompt
     
-    def _format_product_info(self, product: Dict[str, Any], label: str) -> str:
-        """Format product information for inclusion in prompts.
+    def _format_product_info(self, product: Dict[str, Any]) -> str:
+        """Format product information for prompt inclusion.
         
         Args:
             product: Product information dictionary
-            label: Label for the product (e.g., "Product A")
             
         Returns:
             str: Formatted product information
         """
         if not product:
-            return f"{label}: No information provided"
+            return "No product information provided"
         
-        info_lines = [f"{label}:"]
+        info_lines = []
         
-        # Standard fields
-        for field in ["id", "title", "name", "category", "brand", "manufacturer"]:
-            if field in product:
-                info_lines.append(f"  {field.title()}: {product[field]}")
-        
-        # Attributes
-        if "attributes" in product and isinstance(product["attributes"], dict):
-            info_lines.append("  Attributes:")
-            for key, value in product["attributes"].items():
-                info_lines.append(f"    {key}: {value}")
-        
-        # Description
+        # Basic product info
+        if "title" in product:
+            info_lines.append(f"Title: {product['title']}")
+        if "brand" in product:
+            info_lines.append(f"Brand: {product['brand']}")
+        if "category" in product:
+            info_lines.append(f"Category: {product['category']}")
         if "description" in product:
-            info_lines.append(f"  Description: {product['description']}")
+            info_lines.append(f"Description: {product['description']}")
         
-        # Any other fields
-        standard_fields = {"id", "title", "name", "category", "brand", "manufacturer", "attributes", "description"}
-        for key, value in product.items():
-            if key not in standard_fields:
-                info_lines.append(f"  {key.title()}: {value}")
+        # Product attributes
+        if "attributes" in product and product["attributes"]:
+            info_lines.append("Attributes:")
+            for key, value in product["attributes"].items():
+                if isinstance(value, list):
+                    value_str = ", ".join(str(v) for v in value)
+                else:
+                    value_str = str(value)
+                info_lines.append(f"  - {key}: {value_str}")
         
         return "\n".join(info_lines)
-    
-    def _normalize_decision(self, decision: Any, task: EvaluationTask) -> Any:
-        """Normalize the decision based on the task's decision type.
-        
-        Args:
-            decision: Raw decision value
-            task: The evaluation task
-            
-        Returns:
-            Any: Normalized decision value
-        """
-        decision_schema = task.decision_schema
-        
-        if decision_schema.__class__.__name__ == "BooleanDecisionSchema":
-            # Convert to boolean
-            if isinstance(decision, bool):
-                return decision
-            elif isinstance(decision, str):
-                decision_lower = decision.lower().strip()
-                if decision_lower in ["true", "yes", "compatible", "1"]:
-                    return True
-                elif decision_lower in ["false", "no", "incompatible", "0"]:
-                    return False
-            return True  # Default to compatible
-        
-        elif decision_schema.__class__.__name__ == "CategoricalDecisionSchema":
-            # Validate against allowed categories
-            if hasattr(decision_schema, 'categories'):
-                if decision in decision_schema.categories:
-                    return decision
-                
-                # Try case-insensitive match
-                decision_lower = str(decision).lower()
-                for category in decision_schema.categories:
-                    if category.lower() == decision_lower:
-                        return category
-                
-                # Default to insufficient information
-                return "insufficient_information"
-            
-            return str(decision)
-        
-        else:
-            # For other decision types, return as-is
-            return decision

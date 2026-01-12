@@ -1,265 +1,227 @@
-# Engineering Lab - AI & LLM Projects
+# Engineering Lab
 
-This repository contains a collection of production-ready AI and LLM projects, ranging from simple examples to sophisticated multi-agent frameworks. Each project demonstrates different aspects of building reliable, scalable AI systems.
+A comprehensive workspace for multi-agent AI systems, LLM service abstractions, and interactive evaluation tools.
 
-## 🏗️ Repository Structure
+## 🏗️ Projects Overview
 
-```
-engineering-lab/
-├── agent-alignment-framework/    # Multi-agent evaluation & alignment framework
-├── llm-service/                  # Production LLM API microservice
-├── hello-llm/                    # Simple LLM integration example
-├── projects/                     # Additional experimental projects
-├── docs/                         # Shared documentation
-└── tools/                        # Shared utilities and tools
-```
+This repository contains multiple interconnected projects that form a complete ecosystem for multi-agent AI development and evaluation:
 
-## 🚀 Projects Overview
-
-### 1. Agent Alignment Framework
-**Path**: `agent-alignment-framework/`  
-**Status**: ✅ Production Ready (v2.0.0)
-
-A deterministic, domain-agnostic framework for multi-agent evaluation with disagreement detection and human-in-the-loop escalation contracts.
-
+### 🧠 [Agent Alignment Framework](./agent-alignment-framework/)
+**Purpose**: Core library for multi-agent evaluation and alignment analysis  
+**Type**: Python package (library-grade)  
 **Key Features**:
-- **Multi-agent orchestration** with specialized roles (advocate, skeptic, judge)
-- **Deterministic alignment analysis** with explicit disagreement detection
-- **HITL escalation contracts** - pure, serializable payloads for human review
-- **Schema-driven evaluations** (Boolean, Categorical, Scalar, Free-form)
-- **LLM provider agnostic** (OpenAI, Anthropic, Local models)
-- **Embeddable architecture** - works in APIs, batch jobs, UIs, agent platforms
+- Multi-agent decision orchestration with advocate/skeptic/judge patterns
+- Alignment analysis and disagreement detection
+- LLM provider abstraction (OpenAI, Anthropic)
+- Human-in-the-loop (HITL) escalation system
+- Deterministic testing with mock responses
 
-**Use Cases**:
-- Risk assessment and compliance evaluation
-- Content moderation and quality review
-- Technical decision analysis (code review, architecture)
-- Multi-perspective research and analysis
+**Use Cases**: Product compatibility evaluation, content moderation, risk assessment, any scenario requiring multiple AI perspectives with alignment analysis.
 
-**Quick Start**:
-```bash
-cd agent-alignment-framework
-python scripts/run_tests.py                    # Run all tests
-python examples/example_usage.py               # Try the demo
-python scripts/live_llm_smoke_test.py --help   # Optional LLM integration test
-```
-
-**Documentation**: [Framework README](agent-alignment-framework/README.md) | [Architecture](agent-alignment-framework/docs/architecture.md) | [Positioning](agent-alignment-framework/docs/positioning.md)
-
----
-
-### 2. LLM Compatibility Service
-**Path**: `llm-service/`  
-**Status**: ✅ Production Ready
-
-A FastAPI microservice that provides intelligent product compatibility analysis using a multi-agent debate architecture. Designed for e-commerce platforms and inventory management systems.
-
+### 🖥️ [Agent Alignment UI](./agent-alignment-ui/)
+**Purpose**: Full-stack web application for interactive multi-agent evaluations  
+**Type**: FastAPI backend + React frontend  
 **Key Features**:
-- **Multi-agent debate system** for nuanced compatibility analysis
-- **Production-grade FastAPI** with authentication, validation, and error handling
-- **Structured JSON responses** with confidence scoring
-- **Comprehensive relationship classification** (replacement, accessory, consumable, etc.)
-- **Request tracing and observability** with structured logging
-- **Resilient architecture** with retries, timeouts, and graceful degradation
+- Interactive evaluation creation and configuration
+- Real-time evaluation progress with WebSocket updates
+- Comprehensive result visualization and alignment analysis
+- Evaluation history management with export capabilities
+- API key management and provider configuration
+- Human-in-the-loop interface for disputed decisions
 
-**Use Cases**:
-- E-commerce product recommendations
-- Inventory management and procurement
-- Product catalog organization
-- Compatibility verification systems
+**Architecture**: 
+- **Backend**: FastAPI server with REST APIs and WebSocket support
+- **Frontend**: React + TypeScript with Material-UI components
+- **Integration**: Seamless integration with Agent Alignment Framework
 
-**Quick Start**:
-```bash
-cd llm-service
-pip install -r requirements.txt
-uvicorn src.api:app --reload
-```
-
-**Documentation**: [Service README](llm-service/README.md)
-
----
-
-### 3. Hello LLM
-**Path**: `hello-llm/`  
-**Status**: ✅ Example/Learning
-
-A minimal example demonstrating basic OpenAI API integration. Perfect for learning the fundamentals of LLM API usage.
-
+### 🔧 [LLM Service](./llm-service/)
+**Purpose**: Centralized LLM provider abstraction and prompt management  
+**Type**: Service layer  
 **Key Features**:
-- **Simple OpenAI client** with environment-based configuration
-- **Clean example code** showing best practices
-- **Minimal dependencies** for easy understanding
+- Provider-agnostic LLM interface (OpenAI, Anthropic, etc.)
+- Centralized prompt template management
+- Request/response logging and monitoring
+- Configuration management for different environments
 
-**Use Cases**:
-- Learning LLM API basics
-- Quick prototyping and experimentation
-- Reference implementation for simple integrations
+### 👋 [Hello LLM](./hello-llm/)
+**Purpose**: Minimal demo application for basic LLM interactions  
+**Type**: Simple demo/sandbox  
+**Key Features**:
+- Basic chat interface
+- Quick LLM provider testing
+- Development sandbox for experimentation
 
-**Quick Start**:
-```bash
-cd hello-llm
-pip install openai python-dotenv
-# Set OPENAI_API_KEY in .env file
-python app.py
-```
-
----
-
-### 4. Experimental Projects
-**Path**: `projects/`  
-**Status**: 🧪 Experimental
-
-Additional projects and experiments in various stages of development.
-
-- `projects/hello-llm/` - Alternative hello-world implementations
-- `projects/sandbox/` - Experimental code and prototypes
-
----
-
-## 🎯 Project Relationships
-
-### Complementary Architecture
-
-The projects in this repository are designed to work together while maintaining clear boundaries:
+## 🔄 Project Relationships
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Application Layer                        │
-│  (Your business logic, UIs, workflows)                      │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│              Agent Alignment Framework                      │
-│  • Multi-agent evaluation and disagreement detection        │
-│  • HITL escalation contracts                                │
-│  • Domain-agnostic reasoning engine                         │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                  LLM Service Layer                          │
-│  • Production LLM API (llm-service)                         │
-│  • Provider abstraction and resilience                      │
-│  • Authentication, validation, observability                │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                 LLM Provider APIs                           │
-│  (OpenAI, Anthropic, Local models)                          │
+│                    Engineering Lab                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────┐    ┌─────────────────────────────────┐ │
+│  │   LLM Service   │◄───┤     Agent Alignment UI         │ │
+│  │                 │    │                                 │ │
+│  │ • Provider      │    │ • FastAPI Backend              │ │
+│  │   Abstraction   │    │ • React Frontend               │ │
+│  │ • Prompt Mgmt   │    │ • Real-time Updates            │ │
+│  │ • Logging       │    │ • History Management           │ │
+│  └─────────────────┘    │ • API Key Management           │ │
+│                         └─────────────────┬───────────────┘ │
+│                                           │                 │
+│  ┌─────────────────┐    ┌─────────────────▼───────────────┐ │
+│  │   Hello LLM     │    │   Agent Alignment Framework    │ │
+│  │                 │    │                                 │ │
+│  │ • Simple Demo   │    │ • Multi-agent Orchestration    │ │
+│  │ • Quick Testing │    │ • Alignment Analysis           │ │
+│  │ • Sandbox       │    │ • HITL Escalation             │ │
+│  └─────────────────┘    │ • Decision Schemas             │ │
+│                         └─────────────────────────────────┘ │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Integration Patterns
+**Integration Flow**:
+1. **Agent Alignment Framework** provides the core multi-agent evaluation engine
+2. **Agent Alignment UI** provides the interactive interface and orchestrates evaluations
+3. **LLM Service** provides centralized LLM access and prompt management
+4. **Hello LLM** serves as a simple testing ground and demo
 
-1. **Simple Integration**: Use `hello-llm` patterns for basic LLM calls
-2. **Production API**: Use `llm-service` for scalable, resilient LLM access
-3. **Multi-Agent Evaluation**: Use `agent-alignment-framework` for complex decision-making
-4. **Full Stack**: Combine all layers for sophisticated AI applications
-
-## 🛠️ Development Setup
+## 🚀 Quick Start
 
 ### Prerequisites
+- Python 3.9+
+- Node.js 16+
+- API keys for OpenAI and/or Anthropic
 
-- Python 3.9+ (recommended: 3.11)
-- Git
-- API keys for LLM providers (OpenAI, Anthropic)
-
-### Quick Setup
-
+### 1. Environment Setup
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd engineering-lab
 
-# Set up environment variables
-cp llm-service/.env.example llm-service/.env
-cp hello-llm/.env.example hello-llm/.env  # if exists
-# Edit .env files with your API keys
+# Copy environment template
+cp .env.example .env
 
-# Install dependencies for each project as needed
-cd agent-alignment-framework && pip install -e .
-cd ../llm-service && pip install -r requirements.txt
-cd ../hello-llm && pip install openai python-dotenv
+# Add your API keys to .env
+# OPENAI_API_KEY=your-openai-key
+# ANTHROPIC_API_KEY=your-anthropic-key
 ```
 
-### Running Tests
-
+### 2. Agent Alignment Framework (Core Library)
 ```bash
-# Agent Alignment Framework (comprehensive test suite)
 cd agent-alignment-framework
+
+# Install dependencies
+pip install -e .
+
+# Run tests
 python scripts/run_tests.py
 
-# LLM Service (API and integration tests)
-cd llm-service
-python test_providers.py
-python test_logging.py
-
-# Hello LLM (simple execution test)
-cd hello-llm
-python app.py
+# Try the compatibility demo
+cd examples/compatibility
+python demo.py
 ```
+
+### 3. Agent Alignment UI (Full Application)
+```bash
+cd agent-alignment-ui
+
+# Start backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8001
+
+# Start frontend (new terminal)
+cd frontend
+npm install
+npm start
+```
+
+Visit `http://localhost:3000` for the interactive UI.
+
+### 4. LLM Service (Optional)
+```bash
+cd llm-service
+pip install -r requirements.txt
+# Configure and run as needed
+```
+
+## 📊 Use Cases & Examples
+
+### Product Compatibility Evaluation
+Evaluate whether two products are compatible using multiple AI agents:
+- **Advocate Agent**: Argues for compatibility
+- **Skeptic Agent**: Identifies potential issues
+- **Judge Agent**: Makes final determination
+- **System**: Analyzes alignment and escalates disagreements
+
+### Content Moderation
+Multi-perspective content analysis:
+- Different agents evaluate content from various angles
+- Alignment analysis identifies consensus vs. disagreement
+- Human review triggered for disputed cases
+
+### Risk Assessment
+Comprehensive risk evaluation:
+- Multiple agents assess different risk dimensions
+- Confidence scoring and evidence collection
+- Alignment analysis for decision confidence
+
+## 🧪 Testing & Development
+
+### Framework Testing
+```bash
+cd agent-alignment-framework
+python scripts/run_tests.py                    # Deterministic tests
+python scripts/live_llm_smoke_test.py         # Live LLM tests (optional)
+```
+
+### UI Testing
+```bash
+cd agent-alignment-ui
+python tests/test_system_integration.py       # Full system test
+python tests/test_frontend_runtime.py         # Frontend stability
+python tests/test_shared_env_integration.py   # Environment integration
+```
+
+### Development Workflow
+1. **Framework Development**: Work in `agent-alignment-framework/` for core logic
+2. **UI Development**: Work in `agent-alignment-ui/` for interface and user experience
+3. **Integration Testing**: Use provided test suites to verify end-to-end functionality
+4. **Live Testing**: Use Hello LLM for quick experiments and LLM Service for production scenarios
 
 ## 📚 Documentation
 
-### Framework Documentation
-- [Agent Alignment Framework](agent-alignment-framework/README.md) - Complete framework guide
-- [Framework Positioning](agent-alignment-framework/docs/positioning.md) - Purpose and ecosystem fit
-- [Architecture Guide](agent-alignment-framework/docs/architecture.md) - Technical deep dive
-- [HITL Integration](agent-alignment-framework/docs/human-in-the-loop.md) - Human review patterns
-- [Testing Guide](agent-alignment-framework/docs/testing.md) - Test boundaries and validation
-
-### Service Documentation
-- [LLM Service](llm-service/README.md) - Production API service guide
-
-### Learning Resources
-- [Hello LLM](hello-llm/) - Basic LLM integration examples
-
-## 🚀 Deployment
-
-### Production Deployment Options
-
-**Agent Alignment Framework**:
-- Embed directly in applications as a library
-- Deploy as a microservice with REST API wrapper
-- Use in batch processing systems
-- Integrate with existing agent platforms
-
-**LLM Service**:
-- Docker containerization (Dockerfile included)
-- Kubernetes deployment with horizontal scaling
-- API Gateway integration
-- Load balancer configuration
-
-**Integration Patterns**:
-- Event-driven architecture with message queues
-- Synchronous API calls for real-time evaluation
-- Batch processing for large-scale analysis
+- **[Agent Alignment Framework](./agent-alignment-framework/README.md)**: Core library documentation
+- **[Framework Positioning](./agent-alignment-framework/docs/positioning.md)**: Philosophy and design principles
+- **[Testing Guide](./agent-alignment-framework/docs/testing.md)**: Testing strategies and best practices
+- **[Agent Alignment UI](./agent-alignment-ui/README.md)**: Full-stack application guide
+- **[Evaluation History](./agent-alignment-ui/docs/evaluation-history.md)**: History management guide
 
 ## 🤝 Contributing
 
-Each project has its own contribution guidelines:
-
-- **Agent Alignment Framework**: See [Contributing Guide](agent-alignment-framework/CONTRIBUTING.md)
-- **LLM Service**: Follow standard FastAPI development practices
-- **Examples**: Keep simple and focused on learning
-
-### Development Principles
-
-1. **Production Quality**: All code should be production-ready or clearly marked as experimental
-2. **Clear Boundaries**: Each project has a specific purpose and scope
-3. **Comprehensive Testing**: Deterministic tests for core logic, integration tests for APIs
-4. **Documentation First**: Every project includes complete documentation
-5. **Security Conscious**: No API keys in code, secure defaults, input validation
+1. **Framework Contributions**: Focus on `agent-alignment-framework/` for core functionality
+2. **UI Contributions**: Work in `agent-alignment-ui/` for user interface improvements
+3. **Service Contributions**: Enhance `llm-service/` for provider integrations
+4. **Testing**: Add tests for new features and ensure existing tests pass
+5. **Documentation**: Update relevant documentation for changes
 
 ## 📄 License
 
-This repository is licensed under the MIT License. See individual project directories for specific license information.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## 🔧 Architecture Notes
 
-- **Issues**: Use GitHub Issues for bug reports and feature requests
-- **Discussions**: Use GitHub Discussions for questions and community support
-- **Documentation**: Check project-specific README files and documentation
+### Design Principles
+- **Separation of Concerns**: Framework, UI, and services are clearly separated
+- **Provider Agnostic**: Works with multiple LLM providers
+- **Extensible**: Easy to add new agent types, decision schemas, and evaluation criteria
+- **Observable**: Comprehensive logging, monitoring, and result visualization
+- **Human-Centric**: Built-in human-in-the-loop capabilities for disputed decisions
 
----
+### Deployment Options
+- **Development**: Run components locally with provided scripts
+- **Production**: Deploy backend and frontend separately, use external databases
+- **Hybrid**: Use framework as library in existing applications
 
-**Engineering Lab** - Building reliable, scalable AI systems through practical examples and production-ready frameworks.
+This engineering lab provides a complete foundation for building sophisticated multi-agent AI systems with proper alignment analysis, user interfaces, and production-ready components.

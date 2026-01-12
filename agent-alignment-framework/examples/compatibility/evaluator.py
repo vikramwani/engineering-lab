@@ -13,12 +13,11 @@ from agent_alignment import (
     BooleanDecisionSchema,
     CategoricalDecisionSchema,
     LLMClient,
-    AlignmentPolicy,
 )
+from agent_alignment.core.resolution import AlignmentThresholds
 from agent_alignment.llm.providers import OpenAIProvider
-from agent_alignment.config import FrameworkSettings
 
-from .agents import CompatibilityAgent
+from examples.compatibility.agents import CompatibilityAgent
 
 
 class CompatibilityEvaluator:
@@ -42,28 +41,29 @@ class CompatibilityEvaluator:
     def __init__(
         self,
         llm_client: Optional[LLMClient] = None,
-        settings: Optional[FrameworkSettings] = None,
-        alignment_policy: Optional[AlignmentPolicy] = None,
+        alignment_thresholds: Optional[AlignmentThresholds] = None,
     ):
         """Initialize the compatibility evaluator.
         
         Args:
             llm_client: LLM client for agent communication
-            settings: Framework settings (uses defaults if None)
-            alignment_policy: Alignment policy for disagreement handling (uses defaults if None)
+            alignment_thresholds: Alignment thresholds for disagreement handling (uses defaults if None)
         """
-        self.settings = settings or FrameworkSettings.from_env()
-        
         # Create LLM client if not provided
         if llm_client is None:
+            import os
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY environment variable is required")
+            
             provider = OpenAIProvider(
-                model=self.settings.llm_model,
-                api_key=self.settings.llm_api_key,
+                api_key=api_key,
+                model="gpt-4o-mini",
             )
             llm_client = LLMClient(
                 provider=provider,
-                max_retries=self.settings.max_retries,
-                timeout_seconds=self.settings.timeout_seconds,
+                max_retries=3,
+                timeout_seconds=30,
             )
         
         self.llm_client = llm_client
@@ -71,16 +71,14 @@ class CompatibilityEvaluator:
         # Create agent roles
         agent_roles = self._create_agent_roles()
         
-        # Create alignment policy if not provided
-        if alignment_policy is None:
+        # Create alignment thresholds if not provided
+        if alignment_thresholds is None:
             # Use compatibility-specific thresholds
-            alignment_policy = AlignmentPolicy(
-                soft_disagreement_threshold=0.15,  # More sensitive for compatibility
-                hard_disagreement_threshold=0.3,
-                insufficient_signal_threshold=0.6,
+            alignment_thresholds = AlignmentThresholds(
+                soft_disagreement_confidence_spread=0.15,  # More sensitive for compatibility
+                hard_disagreement_confidence_spread=0.3,
+                insufficient_signal_avg_confidence=0.6,
                 min_confidence_for_consensus=0.75,
-                escalate_hard_disagreement=True,
-                escalate_insufficient_signal=True,
             )
         
         # Create multi-agent evaluator
@@ -88,7 +86,7 @@ class CompatibilityEvaluator:
             roles=agent_roles,
             llm_client=llm_client,
             agent_class=CompatibilityAgent,
-            alignment_policy=alignment_policy,
+            alignment_thresholds=alignment_thresholds,
         )
     
     def evaluate_compatibility(
@@ -132,6 +130,7 @@ class CompatibilityEvaluator:
         return {
             "compatible": result.synthesized_decision != "not_compatible",
             "relationship": result.synthesized_decision,
+            "synthesized_decision": result.synthesized_decision,  # Add this field
             "confidence": result.confidence,
             "explanation": result.reasoning,
             "evidence": result.evidence,
@@ -139,6 +138,7 @@ class CompatibilityEvaluator:
                 {
                     "agent_name": output.agent_name,
                     "role_type": output.role_type,
+                    "decision_value": output.decision_value,  # Add this field
                     "compatible": output.decision_value != "not_compatible",
                     "relationship": output.decision_value,
                     "confidence": output.confidence,
@@ -221,8 +221,8 @@ class CompatibilityEvaluator:
                     "share common standards, or complement each other's functionality."
                 ),
                 prompt_template="examples/compatibility/prompts/advocate.txt",
-                max_tokens=self.settings.default_max_tokens,
-                temperature=self.settings.default_temperature,
+                max_tokens=500,
+                temperature=0.1,
             ),
             AgentRole(
                 name="skeptic_agent",
@@ -233,8 +233,8 @@ class CompatibilityEvaluator:
                     "or reasons why the products cannot work together."
                 ),
                 prompt_template="examples/compatibility/prompts/skeptic.txt",
-                max_tokens=self.settings.default_max_tokens,
-                temperature=self.settings.default_temperature,
+                max_tokens=500,
+                temperature=0.1,
             ),
             AgentRole(
                 name="judge_agent",
@@ -245,7 +245,7 @@ class CompatibilityEvaluator:
                     "based on the evidence presented."
                 ),
                 prompt_template="examples/compatibility/prompts/judge.txt",
-                max_tokens=self.settings.default_max_tokens,
-                temperature=self.settings.default_temperature,
+                max_tokens=600,
+                temperature=0.05,
             ),
         ]
